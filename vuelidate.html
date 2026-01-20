@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Vuelidate 実習</title>
+    <title>Vuelidate 実習完了版</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -12,32 +12,45 @@
 </head>
 <body>
     <div id="app" class="container mt-5">
-        <h1 class="bg-primary text-white display-4 px-3">バリデーションの実装</h1>
+        <h1 class="bg-primary text-white display-4 px-3 shadow">バリデーション & データ取得</h1>
         
-        <div class="form-group mt-4">
-            <label>名前（4文字以上）：</label>
-            <input type="text" v-model="state.myName" 
-                   class="form-control form-control-lg" 
-                   :class="{'is-invalid': v$.myName.$error}">
-            
-            <div v-if="v$.myName.$error" class="invalid-feedback">
-                名前は4文字以上で入力してください。
+        <div class="card p-4 mt-4 shadow-sm">
+            <div class="form-group">
+                <label class="font-weight-bold">名前（4文字以上）：</label>
+                <input type="text" v-model="state.myName" 
+                       class="form-control form-control-lg" 
+                       :class="{'is-invalid': v$.myName.$error}">
+                <div v-if="v$.myName.$error" class="invalid-feedback">
+                    名前は4文字以上で入力してください。
+                </div>
             </div>
+            <button @click="submitForm" class="btn btn-success btn-lg">送信チェック</button>
         </div>
 
-        <button @click="submitForm" class="btn btn-success btn-lg">送信</button>
+        <div class="mt-5">
+            <h2 class="border-bottom pb-2">MongoDBからのデータリスト</h2>
+            <ul class="list-group mt-3">
+                <li v-for="note in state.notes" :key="note._id" class="list-group-item d-flex justify-content-between">
+                    <span>{{ note.title }}</span>
+                    <span class="badge badge-secondary">{{ note.date }}</span>
+                </li>
+                <li v-if="state.notes.length === 0" class="list-group-item text-muted">
+                    データがありません。サーバが起動しているか確認してください。
+                </li>
+            </ul>
+        </div>
     </div>
 
     <script>
-    const { createApp, reactive } = Vue;
+    const { createApp, reactive, onMounted } = Vue;
 
     const app = createApp({
         setup() {
             const state = reactive({
-                myName: ''
+                myName: '',
+                notes: []
             });
 
-            // ライブラリを確実に取り出す
             const useVuelidate = window.Vuelidate.useVuelidate;
             const { required, minLength } = window.VuelidateValidators;
 
@@ -47,12 +60,27 @@
 
             const v$ = useVuelidate(rules, state);
 
+            // ★実習サーバのバックエンドに接続
+            const fetchNotes = async () => {
+                try {
+                    const response = await fetch('http://153.120.121.157:30032/notes');
+                    const data = await response.json();
+                    state.notes = data;
+                } catch (e) {
+                    console.error("データ取得エラー:", e);
+                }
+            };
+
+            onMounted(() => {
+                fetchNotes();
+            });
+
             const submitForm = async () => {
                 const isFormCorrect = await v$.value.$validate();
                 if (isFormCorrect) {
-                    alert('送信成功！');
+                    alert('バリデーション成功！');
                 } else {
-                    alert('エラー：入力内容を確認してください。');
+                    alert('入力エラー：名前を4文字以上で入力してください。');
                 }
             };
 
