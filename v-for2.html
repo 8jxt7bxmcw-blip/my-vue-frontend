@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>v-for2</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <h1>MongoDBからのデータリスト</h1>
+        <ul>
+            <li v-for="note in notes" :key="note._id">
+                {{ note.title }} : {{ note.body }}
+            </li>
+        </ul>
+    </div>
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+        createApp({
+            setup() {
+                const notes = ref([]);
+                onMounted(async () => {
+                    try {
+                        const res = await fetch('http://153.120.121.157:30032/notes');
+                        notes.value = await res.json();
+                    } catch (e) { console.error("通信エラー:", e); }
+                });
+                return { notes };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
